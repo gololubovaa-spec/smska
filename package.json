@@ -1,0 +1,13 @@
+{
+  "name": "мой-простой-сервер",
+  "version": "1.0.0",
+  "description": "Простой сервер с HTML",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2" 
+    // Здесь указываются все модули, которые вы импортируете в server.js
+  }
+}
